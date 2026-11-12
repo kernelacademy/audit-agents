@@ -8,7 +8,7 @@ Claude Code 가 설치된 PC 의 터미널에서 두 줄을 실행합니다. Git
 
 ```
 claude plugin marketplace add kernelacademy/audit-agents
-claude plugin install audit-agents@kernelacademy-audit
+claude plugin install audit-agents@kernelacademy-plugins
 ```
 
 설치한 뒤 Claude 앱 Code 탭에서 `/audit-agents:설치` 를 실행하면 감사 루트 폴더를 만들고 설치 상태를 점검합니다. 이어서 `/audit-agents:새회사 <회사명> <결산일>` 로 회사 폴더를 만듭니다.
