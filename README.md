@@ -4,14 +4,22 @@ Claude Code 로 외부감사 업무를 나눠 맡기는 플러그인입니다. K
 
 ## 설치
 
-Claude Code 가 설치된 PC 의 터미널에서 두 줄을 실행합니다. GitHub 로그인은 필요 없습니다.
+Claude 앱 Code 탭에서 감사 루트로 쓸 빈 폴더로 세션을 열고 아래처럼 시킵니다. GitHub 로그인은 필요 없습니다.
+
+```
+audit-agents 플러그인 설치해줘. 마켓플레이스는 kernelacademy/audit-agents, 플러그인은 audit-agents@kernelacademy-plugins, 사용자 범위로
+```
+
+승인 질문이 뜨면 허용합니다. 끝나면 세션을 닫고 같은 폴더로 다시 엽니다. 플러그인은 세션을 열 때 불러옵니다.
+
+다시 연 세션에서 `/audit-agents:설치 "<감사 루트 경로>"` 를 실행하면 감사 루트를 만들고 설치 상태를 점검합니다. 이어서 `/audit-agents:새회사 <회사명> <결산일>` 로 회사 폴더를 만듭니다.
+
+Claude Code 를 터미널에서 쓰는 분은 아래 두 줄로도 설치할 수 있습니다.
 
 ```
 claude plugin marketplace add kernelacademy/audit-agents
 claude plugin install audit-agents@kernelacademy-plugins
 ```
-
-설치한 뒤 Claude 앱 Code 탭에서 `/audit-agents:설치` 를 실행하면 감사 루트 폴더를 만들고 설치 상태를 점검합니다. 이어서 `/audit-agents:새회사 <회사명> <결산일>` 로 회사 폴더를 만듭니다.
 
 파이썬 3.11 이상이 필요합니다.
 
