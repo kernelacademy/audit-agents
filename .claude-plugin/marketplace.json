@@ -8,7 +8,7 @@
     {
       "name": "audit-agents",
       "source": "./plugins/audit-agents",
-      "description": "감사 루트와 고객사 폴더, 회사마다 세션, 진행메모, 작업 기록 · 토큰 훅, 현황 화면과 게시, 스킬 여덟"
+      "description": "감사 루트와 고객사 폴더, 회사마다 세션, 진행메모, 작업 기록 · 토큰 훅, 현황 화면과 게시, AI감사팀 화면, 스킬 여덟"
     }
   ]
 }

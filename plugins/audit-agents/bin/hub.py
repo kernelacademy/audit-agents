@@ -1,4 +1,4 @@
-"""감사에이전트 명령줄: setup · newcase · status · check."""
+"""감사에이전트 명령줄: setup · newcase · status · team · check."""
 from __future__ import annotations
 
 import argparse
@@ -15,6 +15,7 @@ from checks import run_checks  # noqa: E402
 from paths import find_root  # noqa: E402
 from setup import make_root, new_case, repair_settings  # noqa: E402
 from status import get_publish_url, set_publish_url, write_publish, write_status  # noqa: E402
+from team import get_team_url, set_team_url, write_team_publish  # noqa: E402
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 PBC = PLUGIN_ROOT / "skills" / "PBC요청자료" / "scripts" / "run.py"
@@ -58,6 +59,10 @@ def main(argv=None) -> int:
     t.add_argument("--open", action="store_true")
     t.add_argument("--publish", action="store_true", help="아티팩트로 올릴 게시용 파일을 만든다")
     t.add_argument("--set-url", help="게시한 아티팩트 주소를 감사 루트에 적어 둔다")
+    m = sub.add_parser("team", help="AI감사팀 화면 게시용 파일")
+    m.add_argument("--root")
+    m.add_argument("--publish", action="store_true", help="아티팩트로 올릴 게시용 파일을 만든다(기본)")
+    m.add_argument("--set-url", help="게시한 AI감사팀 주소를 감사 루트에 적어 둔다")
     c = sub.add_parser("check")
     c.add_argument("--root")
     args = p.parse_args(argv)
@@ -99,6 +104,16 @@ def main(argv=None) -> int:
         print(page)
         if args.open:
             webbrowser.open(page.as_uri())
+    elif args.cmd == "team" and args.set_url:
+        try:
+            set_team_url(root, args.set_url)
+        except ValueError as e:
+            print(f"{e}: {args.set_url}", file=sys.stderr)
+            return 2
+        print(f"게시 주소  {args.set_url}")
+    elif args.cmd == "team":
+        print(f"게시용 파일  {write_team_publish(root, cwd=Path.cwd())}")
+        print(f"게시 주소  {get_team_url(root) or '없음'}")
     elif args.cmd == "check":
         return _print_checks(PLUGIN_ROOT, root)
     return 0

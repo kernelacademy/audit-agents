@@ -14,43 +14,38 @@ from facts import open_items, pbc_counts, read_records, received_files
 from paths import ROOT_MARK, case_info, find_case, list_cases
 from tokens import BASIS_USD, usd_of_totals
 
-CSS = """:root{--bg:#f6f7f9;--card:#fff;--ink:#1d2433;--mute:#667085;--line:#e4e7ec;--warn:#b45309}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1420;--card:#171e2d;--ink:#e6e9ef;--mute:#98a2b3;--line:#2a3345;--warn:#f59e0b}}
-*{box-sizing:border-box}
-body{margin:0;font-family:"Pretendard","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink)}
-main{max-width:1100px;margin:0 auto;padding:16px}
-h1{font-size:20px;margin:8px 0}h2{font-size:15px;margin:24px 0 8px}h3{font-size:14px;margin:12px 0 4px}
-.meta{color:var(--mute);font-size:12px}
-.tok{display:flex;gap:16px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:13px}
-.wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;background:var(--card);font-size:13px}
-td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;white-space:nowrap}
-td.text{white-space:normal}
-.miss{color:var(--warn);font-weight:600}
-ul{margin:0;padding-left:18px;font-size:13px}"""
-
-# 게시용 색은 AI감사팀(허브) 화면의 색을 따른다.
-_DARK = ("--bg:#0e131b;--card:#161d29;--ink:#e6ebf3;--mute:#93a1b8;--line:#2a3548;--warn:#f0b04a;"
-         "--accent:#7ea2ff;color-scheme:dark")
-CSS_PUBLISH = f"""/* 한 장짜리 현황: 토큰 요약, 회사 표, 남은 일, 작업 로그 */
-:root{{--bg:#f3f5f8;--card:#ffffff;--ink:#16202e;--mute:#5d6b80;--line:#d9dfe8;--warn:#a85f00;--accent:#1f4fd8}}
-@media (prefers-color-scheme:dark){{:root:not([data-theme="light"]){{{_DARK}}}}}
-:root[data-theme="dark"]{{{_DARK}}}
-*{{box-sizing:border-box}}
-body{{margin:0;font-family:"Noto Sans KR","Malgun Gothic",system-ui,sans-serif;font-size:14px;line-height:1.5;background:var(--bg);color:var(--ink)}}
-main{{max-width:1100px;margin:0 auto;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
-h1{{font-size:19px;margin:8px 0}}h2{{font-size:15px;margin:24px 0 8px}}h3{{font-size:14px;margin:12px 0 4px}}
+# 색은 Kernel Academy 「오늘의 AI 비타민」 토큰(남색 글자 · 옅은 초록 블록 · 잎색 강조)을 따른다. AI감사팀 화면과 같다.
+_LIGHT = ("--bg:#f5f7f4;--card:#ffffff;--ink:#16264a;--body:#1f2937;--mute:#6b7280;--line:#dfe5db;"
+          "--block:#f1f6ef;--leaf:#4b6b3f;--warn:#8a5a00;--warn-soft:#fbf0d9")
+_DARK = ("--bg:#0e1310;--card:#151b17;--ink:#dfe7f5;--body:#d5dbd6;--mute:#98a29b;--line:#27302a;"
+         "--block:#1b241e;--leaf:#a9c79b;--warn:#e5b65f;--warn-soft:#33270f;color-scheme:dark")
+_FONT = '-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",sans-serif'
+_BODY = f"""*{{box-sizing:border-box}}
+body{{margin:0;font-family:{_FONT};font-size:14px;line-height:1.6;background:var(--bg);color:var(--body);word-break:keep-all}}
+h1{{font-size:21px;margin:8px 0;color:var(--ink);font-weight:800}}h2{{font-size:16px;margin:26px 0 8px;color:var(--ink);font-weight:800;padding-bottom:6px;border-bottom:1px solid var(--line)}}h3{{font-size:14px;margin:12px 0 4px;color:var(--ink)}}
 .meta{{color:var(--mute);font-size:12px}}
-.tok{{display:flex;gap:16px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;font-size:13px;font-variant-numeric:tabular-nums}}
-.tok b{{color:var(--accent)}}
-.wrap{{overflow-x:auto;border:1px solid var(--line);border-radius:8px}}
+.tok{{display:flex;gap:8px 20px;flex-wrap:wrap;background:var(--block);border-radius:12px;padding:10px 16px;font-size:13px;font-variant-numeric:tabular-nums}}
+.tok b{{color:var(--ink)}}
+.wrap{{overflow-x:auto;border:1px solid var(--line);border-radius:12px}}
 table{{width:100%;border-collapse:collapse;background:var(--card);font-size:13px}}
-td,th{{border-bottom:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top;white-space:nowrap}}
-th{{color:var(--mute);font-weight:500}}
+td,th{{border-bottom:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top;white-space:nowrap}}
+th{{color:var(--leaf);font-weight:700;background:var(--block)}}
 tr:last-child td{{border-bottom:0}}
 td.text{{white-space:normal;min-width:240px;overflow-wrap:anywhere}}
 .miss{{color:var(--warn);font-weight:700}}
-ul{{margin:0;padding-left:18px;font-size:13px}}"""
+ul{{margin:0;padding-left:18px;font-size:13px}}
+li::marker{{color:var(--leaf)}}"""
+CSS = f""":root{{{_LIGHT}}}
+@media (prefers-color-scheme:dark){{:root{{{_DARK}}}}}
+{_BODY}
+main{{max-width:1100px;margin:0 auto;padding:16px}}"""
+
+CSS_PUBLISH = f"""/* 한 장짜리 현황: 토큰 요약, 회사 표, 남은 일, 작업 로그 */
+:root{{{_LIGHT}}}
+@media (prefers-color-scheme:dark){{:root:not([data-theme="light"]){{{_DARK}}}}}
+:root[data-theme="dark"]{{{_DARK}}}
+{_BODY}
+main{{max-width:1100px;margin:0 auto;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}"""
 
 PUBLISH_NAME = "_현황_게시.html"
 URL_KEY = "status_artifact_url"
@@ -171,13 +166,13 @@ def _mark(root) -> dict:
     return d if isinstance(d, dict) else {}
 
 
-def get_publish_url(root) -> str:
-    return str(_mark(root).get(URL_KEY) or "")
+def get_publish_url(root, key: str = URL_KEY) -> str:
+    return str(_mark(root).get(key) or "")
 
 
-def set_publish_url(root, url: str) -> None:
+def set_publish_url(root, url: str, key: str = URL_KEY) -> None:
     if not URL_OK.fullmatch(url or ""):
         raise ValueError("claude.ai 아티팩트 주소가 아닙니다")
     d = _mark(root)
-    d[URL_KEY] = url
+    d[key] = url
     (Path(root) / ROOT_MARK).write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
