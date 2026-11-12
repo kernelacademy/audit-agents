@@ -7,7 +7,7 @@ Claude Code 로 외부감사 업무를 나눠 맡기는 플러그인입니다. K
 Claude 앱 Code 탭에서 감사 루트로 쓸 빈 폴더로 세션을 열고 아래처럼 시킵니다. GitHub 로그인은 필요 없습니다.
 
 ```
-audit-agents 플러그인 설치해줘. 마켓플레이스는 kernelacademy/audit-agents, 플러그인은 audit-agents@kernelacademy-plugins, 사용자 범위로
+kernelacademy/audit-agents 에서 audit-agents 플러그인을 사용자 범위로 설치해줘
 ```
 
 승인 질문이 뜨면 허용합니다. 끝나면 세션을 닫고 같은 폴더로 다시 엽니다. 플러그인은 세션을 열 때 불러옵니다.
