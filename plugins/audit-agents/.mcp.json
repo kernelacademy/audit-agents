@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "accountingwiki": {"type": "http", "url": "https://accountingwiki.co.kr/api/mcp"}
+  }
+}

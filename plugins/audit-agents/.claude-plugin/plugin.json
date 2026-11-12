@@ -1,0 +1,6 @@
+{
+  "name": "audit-agents",
+  "version": "0.1.0",
+  "description": "감사에이전트. 감사 루트 하나 아래 고객사 폴더, 회사마다 세션, 진행메모로 잇기, 작업 기록 · 토큰 훅, 현황 화면",
+  "author": { "name": "Kernelspace" }
+}

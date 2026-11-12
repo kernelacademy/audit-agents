@@ -1,0 +1,19 @@
+{
+ "as_of": "2026-11-03",
+ "unit": "USD per 1,000,000 tokens",
+ "source": "Anthropic API 단가표(first-party). 캐시 읽기 단가는 모델마다 다르다.",
+ "default": "claude-opus-5-5",
+ "cache_write_multiplier": {"5m": 1.25, "1h": 2.0},
+ "models": {
+  "claude-fable-5-2": {"in": 8.0, "out": 40.0, "cache_read": 0.20},
+  "claude-fable-5": {"in": 10.0, "out": 50.0, "cache_read": 0.25},
+  "claude-opus-5-5": {"in": 4.0, "out": 20.0, "cache_read": 0.20},
+  "claude-opus-5": {"in": 5.0, "out": 25.0, "cache_read": 0.50},
+  "claude-opus-4": {"in": 5.0, "out": 25.0, "cache_read": 0.50},
+  "claude-sonnet-5-5": {"in": 2.0, "out": 10.0, "cache_read": 0.10},
+  "claude-sonnet-5": {"in": 2.0, "out": 10.0, "cache_read": 0.20},
+  "claude-sonnet-4": {"in": 3.0, "out": 15.0, "cache_read": 0.30},
+  "claude-haiku-5-5": {"in": 0.10, "out": 0.50, "cache_read": 0.01},
+  "claude-haiku-4": {"in": 1.0, "out": 5.0, "cache_read": 0.10}
+ }
+}

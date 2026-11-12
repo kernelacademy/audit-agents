@@ -1,0 +1,14 @@
+{
+  "name": "kernelacademy-audit",
+  "owner": {
+    "name": "Kernel Academy"
+  },
+  "description": "Kernel Academy 무료 공개 플러그인. 강의 「Claude Code 로 감사하기」 실습용 audit-agents",
+  "plugins": [
+    {
+      "name": "audit-agents",
+      "source": "./plugins/audit-agents",
+      "description": "감사 루트와 고객사 폴더, 회사마다 세션, 진행메모, 작업 기록 · 토큰 훅, 현황 화면과 게시, 스킬 여섯"
+    }
+  ]
+}
