@@ -9,10 +9,11 @@ from pathlib import Path
 
 from paths import CONTEXT_DIR, LOG, ROOT_MARK, case_info, list_cases
 
-SKILLS_REQUIRED = ("PBC요청자료", "분개테스트", "DSD푸팅", "감사대시보드", "수령확인", "4000절차점검")
-# 함께 싣는 스킬(PBC요청자료 · 분개테스트 · DSD푸팅)의 requirements.txt 에서 시험용(pytest)을 뺀 것. {import 이름: pip 패키지}
+SKILLS_REQUIRED = ("PBC요청자료", "분개테스트", "DSD푸팅", "감사대시보드", "CF현금흐름표", "수령확인", "4000절차점검",
+                   "WTB정산표")
+# 함께 싣는 스킬(PBC요청자료 · 분개테스트 · DSD푸팅 · CF현금흐름표 · WTB정산표)의 requirements.txt 에서 시험용(pytest)을 뺀 것. {import 이름: pip 패키지}
 PIP_MODULES = {"openpyxl": "openpyxl", "yaml": "pyyaml", "jsonschema": "jsonschema", "docx": "python-docx",
-               "fitz": "pymupdf", "xlrd": "xlrd"}
+               "fitz": "pymupdf", "xlrd": "xlrd", "pandas": "pandas"}
 PYTHON_FIX = "python.org 설치 프로그램에서 Add python.exe to PATH 를 켜고 다시 설치합니다"
 
 
