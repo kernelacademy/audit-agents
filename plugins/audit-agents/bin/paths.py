@@ -12,6 +12,29 @@ LOG = Path("_기록") / "기록.jsonl"
 MEMO = "진행메모.md"
 
 
+SETUP_SKILL = "감사세팅-setup"
+
+
+def base_dir() -> Path:
+    """bin 의 부모. 플러그인이면 플러그인 루트, 스킬만 설치했으면 감사세팅 스킬 폴더."""
+    return Path(__file__).resolve().parents[1]
+
+
+def as_plugin() -> bool:
+    """플러그인으로 설치됐는가. 스킬만 설치한 배포본(tools/build_skills.py)에는 .claude-plugin 이 없다."""
+    return (base_dir() / ".claude-plugin").is_dir()
+
+
+def skills_dir() -> Path:
+    """다른 스킬이 있는 폴더. 플러그인이면 <루트>/skills, 스킬만 설치했으면 감사세팅 스킬의 형제 폴더."""
+    return base_dir() / "skills" if as_plugin() else base_dir().parent
+
+
+def say(name: str) -> str:
+    """안내 문장에 쓰는 부르는 법. 플러그인은 명령, 스킬만 설치했으면 감사세팅 스킬에 하는 말."""
+    return f"/audit-agents:{name}" if as_plugin() else f"「{name}」(감사세팅 스킬)"
+
+
 def gamsa_home() -> Path:
     return Path(os.environ.get("GAMSA_HOME") or Path.home() / ".감사에이전트")
 

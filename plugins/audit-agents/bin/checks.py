@@ -7,7 +7,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from paths import CONTEXT_DIR, LOG, ROOT_MARK, case_info, list_cases
+from paths import CONTEXT_DIR, LOG, ROOT_MARK, as_plugin, base_dir, case_info, list_cases, say, skills_dir
 
 SKILLS_REQUIRED = ("PBC요청자료", "분개테스트", "DSD푸팅", "감사대시보드", "CF현금흐름표", "수령확인", "4000절차점검",
                    "WTB정산표")
@@ -38,22 +38,29 @@ def _deny_ok(settings: Path) -> bool:
     return any(r.startswith("Edit(//") and "00 받은자료" in r for r in deny)
 
 
+def _skills(plugin_root) -> Path:
+    """스킬만 설치한 배포본에서 자기 폴더를 물으면 형제 폴더, 그 밖에는(플러그인 · 시험) plugin_root/skills."""
+    if not as_plugin() and Path(plugin_root).resolve() == base_dir():
+        return skills_dir()
+    return Path(plugin_root) / "skills"
+
+
 def run_checks(plugin_root, root, modules: dict | None = None) -> list[tuple[bool, str, str]]:
     r: list[tuple[bool, str, str]] = [(sys.version_info >= (3, 11), "파이썬 3.11 이상", sys.version.split()[0]),
                                       _python_check(), _modules_check(PIP_MODULES if modules is None else modules)]
     for s in SKILLS_REQUIRED:
-        ok = (Path(plugin_root) / "skills" / s / "SKILL.md").is_file()
-        r.append((ok, f"스킬 {s}", "" if ok else "플러그인을 다시 설치해 주십시오"))
+        ok = (_skills(plugin_root) / s / "SKILL.md").is_file()
+        r.append((ok, f"스킬 {s}", "" if ok else ("플러그인을 다시 설치해 주십시오" if as_plugin() else "스킬 묶음을 다시 설치해 주십시오")))
     root_ok = bool(root) and all((Path(root) / x).exists() for x in (ROOT_MARK, "CLAUDE.md", CONTEXT_DIR))
-    r.append((root_ok, "감사 루트", str(root) if root_ok else "/audit-agents:설치 로 만들어 주십시오"))
+    r.append((root_ok, "감사 루트", str(root) if root_ok else f"{say('설치')} 로 만들어 주십시오"))
     if not root_ok:
         return r
     cases = list_cases(root)
-    r.append((True, "회사 폴더", f"{len(cases)}곳" if cases else "아직 없음. /audit-agents:새회사 로 만듭니다"))
+    r.append((True, "회사 폴더", f"{len(cases)}곳" if cases else f"아직 없음. {say('새회사')} 로 만듭니다"))
     for case in cases:
         name = case_info(case)["company"]
         ok = _deny_ok(case / ".claude" / "settings.json")
-        r.append((ok, f"{name} 권한 파일", "" if ok else "/audit-agents:설치 를 다시 돌려 주십시오"))
+        r.append((ok, f"{name} 권한 파일", "" if ok else f"{say('설치')} 를 다시 돌려 주십시오"))
         log = case / LOG
         ok = log.is_file() and '"kind": "시작"' in log.read_text(encoding="utf-8")
         r.append((ok, f"{name} 훅 기록", "" if ok else f"{case} 에서 세션을 한 번 열어 주십시오. 그래도 실패하면 python 이 PATH 에 있는지 봅니다"))

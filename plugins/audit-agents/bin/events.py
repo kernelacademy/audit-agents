@@ -1,11 +1,15 @@
 """훅 입력을 기록 줄로 바꾸고, 세션 시작 때 넣을 글과 진행메모 확인을 만든다."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from facts import case_line
 from paths import MEMO, find_case, find_root, list_cases
 from tokens import session_usage
+
+
+_SKILL_CMD = re.compile(r"""[\\/]([^\\/"'<>|:*?]+)[\\/]scripts[\\/][^\\/"' ]+\.py""")
 
 
 def to_record(payload: dict, now: str) -> dict | None:
@@ -16,7 +20,18 @@ def to_record(payload: dict, now: str) -> dict | None:
     elif ev == "UserPromptSubmit":
         rec.update(kind="지시", detail=(payload.get("prompt") or "")[:120])
     elif ev == "PostToolUse":
-        rec.update(kind="파일", detail=(payload.get("tool_input") or {}).get("file_path") or "")
+        tool, ti = payload.get("tool_name") or "", payload.get("tool_input") or {}
+        if tool == "Skill":
+            # 스킬을 불렀다. 플러그인 스킬은 「audit-agents:수령확인」 꼴이라 뒤쪽 이름만 남긴다
+            rec.update(kind="스킬", detail=str(ti.get("skill") or "").split(":")[-1])
+        elif tool in ("Bash", "PowerShell"):
+            # 스킬 폴더의 스크립트를 돌린 명령만 남긴다(대시보드가 「스킬로 한 일」 을 센다). 그 밖의 명령은 기록하지 않는다
+            m = _SKILL_CMD.search(str(ti.get("command") or ""))
+            if not m:
+                return None
+            rec.update(kind="엔진", detail=m.group(1), cmd=str(ti.get("command"))[:160])
+        else:
+            rec.update(kind="파일", detail=ti.get("file_path") or "")
     elif ev == "Stop":
         rec.update(kind="끝", detail=(payload.get("last_assistant_message") or "")[:200],
                    tokens=session_usage(payload.get("transcript_path")))

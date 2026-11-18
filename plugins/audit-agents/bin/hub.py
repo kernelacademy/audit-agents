@@ -11,14 +11,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from board import summary, write_board  # noqa: E402
 from checks import run_checks  # noqa: E402
-from paths import find_root  # noqa: E402
+from paths import base_dir, find_case, find_root, say, skills_dir  # noqa: E402
 from setup import make_root, new_case, repair_settings  # noqa: E402
 from status import get_publish_url, set_publish_url, write_publish, write_status  # noqa: E402
 from team import get_team_url, set_team_url, write_team_publish  # noqa: E402
 
-PLUGIN_ROOT = Path(__file__).resolve().parents[1]
-PBC = PLUGIN_ROOT / "skills" / "PBC요청자료" / "scripts" / "run.py"
+PLUGIN_ROOT = base_dir()
+PBC = skills_dir() / "PBC요청자료" / "scripts" / "run.py"
 BAD_NAME_CHARS = set('<>:"/|?*') | {chr(92)}
 
 
@@ -63,6 +64,9 @@ def main(argv=None) -> int:
     m.add_argument("--root")
     m.add_argument("--publish", action="store_true", help="아티팩트로 올릴 게시용 파일을 만든다(기본)")
     m.add_argument("--set-url", help="게시한 AI감사팀 주소를 감사 루트에 적어 둔다")
+    b = sub.add_parser("board", help="회사 한 건의 감사대시보드(스킬 · 에이전트 · 회계사 구분)")
+    b.add_argument("--case", help="회사 폴더. 없으면 지금 폴더에서 찾는다")
+    b.add_argument("--open", action="store_true")
     c = sub.add_parser("check")
     c.add_argument("--root")
     args = p.parse_args(argv)
@@ -76,6 +80,22 @@ def main(argv=None) -> int:
             print("결산일은 YYYY-MM-DD 형식으로 적어 주십시오.", file=sys.stderr)
             return 2
 
+    if args.cmd == "board":
+        case = find_case(Path(args.case).expanduser() if args.case else Path.cwd())
+        if case is None:
+            print("회사 폴더를 찾지 못했습니다. 회사 폴더에서 돌리거나 --case 로 주십시오", file=sys.stderr)
+            return 2
+        try:
+            page = write_board(case)
+        except FileNotFoundError:
+            print("감사대시보드 스킬을 찾지 못했습니다. 스킬 묶음을 다시 설치해 주십시오", file=sys.stderr)
+            return 2
+        print(page)
+        print(summary(case))
+        if args.open:
+            webbrowser.open(page.as_uri())
+        return 0
+
     root = Path(args.root).expanduser().resolve() if args.root else find_root(Path.cwd())
     if args.cmd == "setup":
         root = root or Path.home() / "감사"
@@ -85,7 +105,7 @@ def main(argv=None) -> int:
             print(f"권한 파일  {w}")
         return _print_checks(PLUGIN_ROOT, root)
     if root is None:
-        print("감사 루트를 찾지 못했습니다. --root 로 주거나 /audit-agents:설치 를 먼저 돌려 주십시오")
+        print(f"감사 루트를 찾지 못했습니다. --root 로 주거나 {say('설치')} 를 먼저 돌려 주십시오")
         return 2
     if args.cmd == "newcase":
         print(json.dumps(new_case(root, args.company, args.fy_end, args.pbc), ensure_ascii=False, indent=1))

@@ -11,9 +11,9 @@ import json
 import re
 from pathlib import Path
 
-from paths import MEMO
+from paths import MEMO, skills_dir
 
-SKILL = Path(__file__).resolve().parents[1] / "skills" / "4000절차점검"
+SKILL = skills_dir() / "4000절차점검"
 KIND = "검사"
 MAX_NAGS = 4          # 같은 세션 · 같은 파일에 문제를 알리는 횟수. 넘으면 조용히 기록만 한다
 SHOW = 8              # 한 번에 보이는 문제 수

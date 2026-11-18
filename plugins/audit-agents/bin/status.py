@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 from facts import open_items, pbc_counts, read_records, received_files
-from paths import ROOT_MARK, case_info, find_case, list_cases
+from paths import ROOT_MARK, case_info, find_case, list_cases, say
 from tokens import BASIS_USD, usd_of_totals
 
 # 색은 Kernel Academy 「오늘의 AI 비타민」 토큰(남색 글자 · 옅은 초록 블록 · 잎색 강조)을 따른다. AI감사팀 화면과 같다.
@@ -120,7 +120,7 @@ def _main(data: dict, publish: bool) -> str:
            f"<span>API 단가로 환산하면 약 <b>${usd:,.2f}</b> · Max 요금제 월 ${BASIS_USD} 의 {usd / BASIS_USD * 100:.1f}%</span>"
            + "".join(f"<span>{e(k)} {num(v)} (약 ${by_usd.get(k, 0.0):,.2f})</span>" for k, v in t["by_case"].items()))
     title = "AI감사팀 현황" if publish else "감사 현황"
-    again = "다시 올리려면 /audit-agents:현황게시" if publish else "다시 만들려면 /audit-agents:현황"
+    again = f"다시 올리려면 {say('현황게시')}" if publish else f"다시 만들려면 {say('현황')}"
     return f"""<main>
 <h1>{title}</h1><p class="meta">만든 시각 {e(data['made_at'])} · {again}</p>
 <div class="tok">{tok}</div>

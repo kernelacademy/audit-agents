@@ -8,7 +8,9 @@ import sys
 from pathlib import Path
 
 from config import IMPORT_ROOT_MD
-from paths import CASE_MARK, CONTEXT_DIR, MEMO, ROOT_MARK, list_cases, to_rule_path
+from paths import CASE_MARK, CONTEXT_DIR, MEMO, ROOT_MARK, as_plugin, base_dir, list_cases, to_rule_path
+
+PLUGIN_ROOT = Path(__file__).resolve().parents[1]  # bin 의 부모가 플러그인 폴더
 
 ROOT_CLAUDE_MD = """# 감사 사무소 규칙
 
@@ -37,9 +39,10 @@ ROOT_CLAUDE_MD = """# 감사 사무소 규칙
 2. 요청 목록이 없으면 PBC요청자료 스킬의 `start` 로 요청 목록과 요청 메일 초안을 만든다.
 3. 자료가 더 들어왔다고 하면 수령확인 스킬을 따른다.
 4. 「사전 분석」 · 「위험평가」 를 시키면 `_색인/시작자료.json` 의 증감과 전기조서를 읽고, 다시 볼 계정마다 회계위키 감리지적사례와 기준서 문단을 붙여 `2000 위험평가/사전분석_메모.md` 에 쓴다.
-5. dsd 를 받으면 DSD푸팅 스킬 순서대로 돌린다. 조서 하나를 고치라고 하면 같은 숫자를 쓰는 다른 조서를 먼저 찾아 목록을 보이고, 회계사가 고른 것만 고친다.
+5. dsd 를 받으면 DSD푸팅 스킬로 돌린다. 결과 폴더(`--out`)는 `_작업/DSD푸팅` 이다. `00 받은자료` 안에 결과를 쓰지 않는다. 회계사가 「엔진 결과만」 이라고 하지 않으면 엔진 결과(quick)를 낸 뒤 묻지 않고 AI 판정까지 이어서 한다. 받은자료(의사록 · 등기부 · 감사계약)와 `2000 위험평가` 의 감사계획에서 옮긴 사실(대표이사 · 본점 주소 · 감사기간 · 감사보고서일)로 `기준사실.json` 을 써서 quick 에 `--facts` 로 넣는다. 의사록 · 등기부에서 대표이사 변경 · 본점 이전 · 상호 변경 · 증자 · 차입 · 담보 · 보증 · 결산일 뒤 사건을 골라 문장 검토 에이전트에게 「공시 확인 대상」 으로 넘기고, 건마다 공시 여부를 `문장.json` 의 `disclosures` 에 적게 한다(이 플러그인의 DSD 엔진은 감사 폴더를 읽지 않아 그 목록을 만들지 않는다). 그다음 스킬의 「빠른 검토와 화면에서 고치기」 2 ~ 4번(숫자와 문장 검토를 두 에이전트에게 동시에 맡기기, 넣기, 판정)과 「순서」 7번 독립 검증까지 한 뒤 보고한다. 엔진 결과만으로는 불일치를 찾았다고 보지 않는다. 조서 하나를 고치라고 하면 같은 숫자를 쓰는 다른 조서를 먼저 찾아 목록을 보이고, 회계사가 고른 것만 고친다.
 6. 4000 계정별 조서를 설계하거나 초안을 쓰면 끝내기 전에 4000절차점검 스킬을 돌린다. 영역 절차 목록과 대조해 빠진 절차를 본문에 채우고, 검사가 통과한 뒤 보고한다.
 7. 일을 마치면 `진행메모.md` 를 고친다. 오늘 한 것, 회계사가 정한 것, 회사 답변, 남은 일.
+8. 「감사 대시보드 보여줘」 · 「누가 했나 보여줘」 면 감사대시보드를 덧입혀 연다. 플러그인으로 설치했으면 `/audit-agents:대시보드` 명령, 스킬만 설치했으면 감사세팅 스킬의 감사대시보드(`hub.py board --open`)다. 항목마다 스킬 · 에이전트 · 회계사 가운데 누가 했는지 보인다. 감사대시보드 스킬을 직접 돌리면 그 구분이 없다.
 
 ## 일하는 순서 (감사 루트 세션)
 
@@ -72,6 +75,53 @@ MEMO_TEMPLATE = """# 진행메모
 """
 
 
+def hook_settings() -> dict:
+    """스킬만 설치한 배포본은 플러그인 훅이 없다. 같은 훅 넷을 폴더의 권한 파일에 적는다(플러그인이면 빈 dict).
+    경로는 감사세팅 스킬 폴더의 절대 경로라, 스킬 폴더를 옮기면 설치를 다시 돌려 고친다."""
+    if as_plugin():
+        return {}
+    cmd = {"type": "command", "command": f'python "{(base_dir() / "bin" / "hub_hook.py").as_posix()}"'}
+    return {"hooks": {"SessionStart": [{"hooks": [cmd]}], "UserPromptSubmit": [{"hooks": [cmd]}],
+                      "PostToolUse": [{"matcher": "Edit|Write|Skill|Bash|PowerShell", "hooks": [cmd]}], "Stop": [{"hooks": [cmd]}]}}
+
+
+WIKI_MCP = {"accountingwiki": {"type": "http", "url": "https://accountingwiki.co.kr/api/mcp"}}
+
+
+def write_mcp(folder) -> Path | None:
+    """스킬만 설치한 배포본은 플러그인의 .mcp.json 이 없다. 폴더의 .mcp.json 에 회계위키를 적는다(다른 서버는 그대로 둔다).
+    세션을 처음 열 때 이 서버를 쓸지 승인을 묻는다. 플러그인이면 쓰지 않는다."""
+    if as_plugin():
+        return None
+    p = Path(folder).resolve() / ".mcp.json"
+    try:
+        cur = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        cur = {}
+    servers = cur.get("mcpServers") if isinstance(cur.get("mcpServers"), dict) else {}
+    cur["mcpServers"] = {**servers, **WIKI_MCP}
+    p.write_text(json.dumps(cur, ensure_ascii=False, indent=2), encoding="utf-8")
+    return p
+
+
+def write_root_settings(root) -> Path | None:
+    """감사 루트 세션도 세션을 열 때 회사 목록 한 줄을 받게 훅을 적는다. 플러그인이면 쓰지 않는다.
+    루트 권한 파일에는 훅만 둔다. 회계사가 넣은 다른 키는 그대로 둔다."""
+    hooks = hook_settings()
+    if not hooks:
+        return None
+    s = Path(root).resolve() / ".claude" / "settings.json"
+    try:
+        cur = json.loads(s.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        cur = {}
+    cur.update(hooks)
+    s.parent.mkdir(parents=True, exist_ok=True)
+    s.write_text(json.dumps(cur, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_mcp(root)
+    return s
+
+
 def make_root(root) -> list[str]:
     root = Path(root).resolve()
     for d in ("조서가이드", "전기조서"):
@@ -95,11 +145,16 @@ def case_settings(case, root) -> dict:
             "defaultMode": "acceptEdits",
             # 영구조서는 회사 폴더 옆(<회사>/영구조서)에 있어 작업 폴더에 들지 않는다. 읽을 수 있게 더한다
             "additionalDirectories": [str(ctx), str(case.parent / "영구조서")],
-            "allow": ["Bash(python *)", "Bash(py *)"],
+            # Windows 에서는 에이전트가 PowerShell 도구로 스킬 엔진을 돌리기도 한다(11-18 시나리오 시험: DSD푸팅 foot 이 승인 대기로 멈췄다).
+            # 플러그인 폴더는 회사 폴더 바깥이라 스킬이 references 를 읽을 때마다 승인을 묻는다(11-18: DSD푸팅 문장-검토.md 를 못 읽어
+            # 기준사실.json 을 건너뛰었다). 설치본(~/.claude/plugins)과 지금 돌고 있는 플러그인 폴더(--plugin-dir) 읽기를 허용한다
+            "allow": ["Bash(python *)", "Bash(py *)", "PowerShell(python *)", "PowerShell(py *)",
+                      "Read(~/.claude/plugins/**)", f"Read({to_rule_path(PLUGIN_ROOT)}/**)"],
             "deny": [f"Edit({to_rule_path(case / '00 받은자료')}/**)", f"Edit({to_rule_path(ctx)}/**)"],
         },
         # 스킬 스크립트의 한글 출력이 깨지지 않게 한다. 명령 앞에 환경변수를 붙이면 allow 규칙에 안 맞아 승인 질문이 뜬다
         "env": {"PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"},
+        **hook_settings(),
     }
 
 
@@ -146,6 +201,9 @@ def new_case(root, company: str, fy_end: str, pbc_script) -> dict:
     for d in ("_기록", "_작업/메일"):
         (case / d).mkdir(parents=True, exist_ok=True)
     written = [str(_write_settings(case, root))]
+    mcp = write_mcp(case)
+    if mcp:
+        written.append(str(mcp))
     for name, text in (("CLAUDE.md", case_claude_md(company, fy_end)), (MEMO, MEMO_TEMPLATE)):
         p = case / name
         if not p.exists():
@@ -155,5 +213,8 @@ def new_case(root, company: str, fy_end: str, pbc_script) -> dict:
 
 
 def repair_settings(root) -> list[str]:
-    """감사 루트를 옮긴 뒤 회사마다 권한 파일의 절대 경로를 다시 쓴다."""
-    return [str(_write_settings(case, root)) for case in list_cases(root)]
+    """감사 루트를 옮긴 뒤 회사마다 권한 파일의 절대 경로를 다시 쓴다. 스킬만 설치한 배포본은 루트 훅도 다시 쓴다."""
+    rs = write_root_settings(root)
+    for case in list_cases(root):
+        write_mcp(case)
+    return ([str(rs)] if rs else []) + [str(_write_settings(case, root)) for case in list_cases(root)]
