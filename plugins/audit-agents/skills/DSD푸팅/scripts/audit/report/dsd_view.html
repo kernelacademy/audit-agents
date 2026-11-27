@@ -590,7 +590,7 @@ function diffList(){
     else if (x.kind === "추가") w = short(x.new);
     else if (x.kind === "삭제") w = short(x.old);
     else w = short(x.old) + " → " + short(x.new);
-    var wh = w === null ? snip(x.old, x.new) : esc(w);        // 글 변경은 바뀐 곳 앞뒤만(긴 문단은 앞 80자가 같아 보였다, 11-04 네온테크)
+    var wh = w === null ? snip(x.old, x.new) : esc(w);        // 글 변경은 바뀐 곳 앞뒤만(긴 문단은 앞 80자가 같아 보였다, 11-04 시험한 감사 건)
     if (x.memo) wh += (wh ? " · " : "") + esc(x.memo);
     h += '<div class="item" data-i="' + i + '"><span class="kb ' + KC[x.k] + '">' + esc(x.k) + "</span> <b>" + esc(x.part) + "</b> " + esc(x.where) +
       (wh ? '<span class="w">' + wh + "</span>" : "") + "</div>";
@@ -620,7 +620,7 @@ function goChange(x){
     showX(target);
   }
 }
-// 넓은 표 안의 칸이 가로로 잘려 보이지 않게 가로 스크롤을 맞춘다(2026-11-04 네온테크 주석36-3)
+// 넓은 표 안의 칸이 가로로 잘려 보이지 않게 가로 스크롤을 맞춘다(2026-11-04 시험한 감사 건 주석36-3)
 function showX(td){
   for (var e = td.parentElement; e && e.id !== "doc"; e = e.parentElement) {
     if (e.scrollWidth > e.clientWidth + 2 && /(auto|scroll)/.test(getComputedStyle(e).overflowX)) {
