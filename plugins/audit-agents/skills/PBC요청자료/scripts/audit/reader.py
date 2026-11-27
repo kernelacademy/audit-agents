@@ -1557,13 +1557,59 @@ def _read_schedule(path: Path, fy_end=None) -> list[dict]:
     return out
 
 
+def _inventory_defs() -> dict | None:
+    """recalc.yaml 의 재고 품목 판독 규칙(inventory). workpapers 가 없는 스킬 꾸러미(PBC요청자료)에서도 읽는다.
+    (2026-11-27: 꾸러미에 audit/workpapers 가 없어 계정명세서를 읽는 순간 시작 단계가 멈췄다. 수강생 시연에서 드러남)"""
+    try:
+        from .workpapers import recalc
+    except ImportError:
+        import yaml
+
+        from . import folder, params
+
+        f = folder.DEFS / "recalc.yaml"
+        if not f.exists():
+            return None
+        return params.overlay("recalc", yaml.safe_load(f.read_text(encoding="utf-8")) or {}).get("inventory")
+    return recalc.defs()["inventory"]
+
+
+def find_tables(path: Path, cols: dict[str, list[str]], need: list[str], sheet_keys: list[str] | None = None) -> list[dict]:
+    """시트마다 첫 10행에서 머리줄을 찾는다(정확히 같은 이름 먼저, 다음은 포함). [{sheet, col: {키: 열}, rows, title}]
+    (2026-11-27 workpapers/recalc.py 에서 옮김. recalc.find_tables 는 이 함수를 가리킨다)"""
+    wb = _open(path)
+    out = []
+    try:
+        for ws in wb.worksheets:
+            if sheet_keys and not any(k in ws.title for k in sheet_keys):
+                continue
+            rows = [tuple(r) for r in ws.iter_rows(values_only=True)]
+            for hi, row in enumerate(rows[:HEADER_SCAN]):
+                hs = [_norm(v) for v in row]
+                col = {}
+                for k, cands in cols.items():
+                    i = next((i for c in cands for i, h in enumerate(hs) if h == _norm(c)), None)
+                    if i is None:
+                        i = next((i for c in cands if len(_norm(c)) >= 2 for i, h in enumerate(hs)
+                                  if _norm(c) in h and i not in col.values()), None)
+                    if i is not None:
+                        col[k] = i
+                if all(k in col for k in need):
+                    title = " ".join(str(v) for r in rows[:hi] for v in r if v)
+                    out.append({"sheet": ws.title, "col": col, "rows": rows[hi + 1:], "title": title})
+                    break
+    finally:
+        wb.close()
+    return out
+
+
 def inventory_items(path: Path) -> dict | None:
     """재고 품목 시트의 품목 수와 장부 금액 합계 {sheet, count, total}. 품목 · 수량 열이 있는 첫 표. 없으면 None."""
-    from .workpapers import recalc
-
-    ic = recalc.defs()["inventory"]
+    ic = _inventory_defs()
+    if not ic:
+        return None
     try:
-        tables = recalc.find_tables(Path(path), ic["columns"], ["item", "qty"], ic["sheets"])
+        tables = find_tables(Path(path), ic["columns"], ["item", "qty"], ic["sheets"])
     except Exception:  # noqa: BLE001  명세서 꼴이 아니면 재고 사실 없이 넘어간다
         return None
     for t in tables:
